@@ -122,3 +122,35 @@ Assistant:
 The page now has both chart types the lab needs. The line chart remains the Zipf log-log plot, and I added a horizontal bar chart of the top word frequencies below it, both driven by the same book selector and rank slider.
 
 The source change is in [build_zipf_page.py](/mnt/c/Users/Kali/Documents/Devel/agentic_ai_labs/vibecoding/build_zipf_page.py), and the regenerated output is in [zipf_interactive.html](/mnt/c/Users/Kali/Documents/Devel/agentic_ai_labs/vibecoding/zipf_interactive.html). If you want, I can also commit this change to the repo.
+
+User:
+So, id like to have all stop words removed, like the, a, and. I want to do the bar chart first, line second.
+
+Assistant:
+I’m updating the page logic now to filter out stop words before counting, and I’ll reorder the visuals so the bar chart comes before the line chart. After that I’ll regenerate the static page and record the change in the log.
+
+Assistant:
+The data path and the layout swap are patched. I’m compiling the generator and rebuilding the static page now so I can verify the stop-word filter actually changes the displayed rankings.
+
+Assistant:
+The rebuild is running. I’m checking the generated HTML for the new ordering and a couple of obvious stop-word holdouts before I wrap up.
+
+Assistant:
+The first pass removed the common stop words, but the tokenizer is still splitting contractions into artifacts like `t`, `s`, and `d`. I’m tightening the regex so apostrophes stay inside a token, which will make the filtered rankings cleaner.
+
+Assistant:
+I’ve corrected the tokenizer. I’m rebuilding and checking the top words again so we can confirm the bar chart starts with real words now.
+
+Assistant:
+The remaining `t`/`s`/`d` terms are contraction artifacts, not meaningful content words. I’m normalizing apostrophes and dropping single-letter tokens so the filtered charts reflect actual vocabulary instead of transcription noise.
+
+Assistant:
+I’ve tightened the tokenizer again. I’m rebuilding and checking the top terms one more time to make sure the bar chart starts with real words now.
+
+Assistant:
+The filtered rankings look better now: the top words are real content words instead of stop-word fragments. I’m appending this change to `prompt_response.txt` and then I’ll summarize the result.
+
+Assistant:
+The bar chart now comes first, the line chart second, and both are based on word counts with common stop words removed. I also fixed tokenization so contractions do not turn into one-letter artifacts.
+
+In the updated view, the leading words are content terms like `says`, `got`, `said`, `thou`, and `alice` rather than `the` or `and`. The changes are in [build_zipf_page.py](/mnt/c/Users/Kali/Documents/Devel/agentic_ai_labs/vibecoding/build_zipf_page.py), and the rebuilt page is in [zipf_interactive.html](/mnt/c/Users/Kali/Documents/Devel/agentic_ai_labs/vibecoding/zipf_interactive.html).

@@ -16,7 +16,133 @@ FILES = [
 TOP_N = 500
 START_RE = re.compile(r"\*\*\* START OF THE PROJECT GUTENBERG EBOOK .* \*\*\*")
 END_RE = re.compile(r"\*\*\* END OF THE PROJECT GUTENBERG EBOOK .* \*\*\*")
-WORD_RE = re.compile(r"[a-z]+(?:'[a-z]+)?")
+WORD_RE = re.compile(r"[a-z]+(?:'[a-z]+)*")
+STOP_WORDS = {
+    "a",
+    "about",
+    "above",
+    "after",
+    "again",
+    "against",
+    "all",
+    "am",
+    "an",
+    "and",
+    "any",
+    "are",
+    "as",
+    "at",
+    "be",
+    "because",
+    "been",
+    "before",
+    "being",
+    "below",
+    "between",
+    "both",
+    "but",
+    "by",
+    "can",
+    "did",
+    "do",
+    "does",
+    "doing",
+    "down",
+    "during",
+    "each",
+    "few",
+    "for",
+    "from",
+    "further",
+    "had",
+    "has",
+    "have",
+    "having",
+    "he",
+    "her",
+    "here",
+    "hers",
+    "herself",
+    "him",
+    "himself",
+    "his",
+    "how",
+    "i",
+    "if",
+    "in",
+    "into",
+    "is",
+    "it",
+    "its",
+    "itself",
+    "just",
+    "me",
+    "more",
+    "most",
+    "my",
+    "myself",
+    "no",
+    "nor",
+    "not",
+    "now",
+    "of",
+    "off",
+    "on",
+    "once",
+    "only",
+    "or",
+    "other",
+    "our",
+    "ours",
+    "ourselves",
+    "out",
+    "over",
+    "own",
+    "same",
+    "she",
+    "should",
+    "so",
+    "some",
+    "such",
+    "than",
+    "that",
+    "the",
+    "their",
+    "theirs",
+    "them",
+    "themselves",
+    "then",
+    "there",
+    "these",
+    "they",
+    "this",
+    "those",
+    "through",
+    "to",
+    "too",
+    "under",
+    "until",
+    "up",
+    "very",
+    "was",
+    "we",
+    "were",
+    "what",
+    "when",
+    "where",
+    "which",
+    "while",
+    "who",
+    "whom",
+    "why",
+    "will",
+    "with",
+    "you",
+    "your",
+    "yours",
+    "yourself",
+    "yourselves",
+}
 
 
 def strip_gutenberg_boilerplate(text: str) -> str:
@@ -38,7 +164,12 @@ def strip_gutenberg_boilerplate(text: str) -> str:
 
 
 def tokenize(text: str) -> list[str]:
-    return WORD_RE.findall(text.lower())
+    normalized = text.lower().replace("’", "'").replace("‘", "'").replace("`", "'")
+    return WORD_RE.findall(normalized)
+
+
+def filter_stop_words(tokens: list[str]) -> list[str]:
+    return [token for token in tokens if len(token) > 1 and token not in STOP_WORDS]
 
 
 def fit_zipf(freqs: list[int]) -> tuple[float, float, float]:
@@ -62,7 +193,7 @@ def fit_zipf(freqs: list[int]) -> tuple[float, float, float]:
 def analyze_file(path: Path) -> dict:
     raw_text = path.read_text(encoding="utf-8-sig")
     clean_text = strip_gutenberg_boilerplate(raw_text)
-    tokens = tokenize(clean_text)
+    tokens = filter_stop_words(tokenize(clean_text))
     counts = Counter(tokens)
     freqs = sorted(counts.values(), reverse=True)
     slope, intercept, r_squared = fit_zipf(freqs)
@@ -328,7 +459,7 @@ def build_html(payload: dict) -> str:
   <div class="page">
     <header>
       <h1>Zipf's Law Explorer</h1>
-      <p class="subtitle">Explore how word frequency falls as rank rises across three public-domain books. Zipf's Law predicts that the most frequent word is roughly twice as common as the second, three times as common as the third, and so on, which produces an approximately straight line on a log-log plot.</p>
+      <p class="subtitle">Explore how word frequency falls as rank rises across three public-domain books after removing common stop words. Zipf's Law predicts that the most frequent word is roughly twice as common as the second, three times as common as the third, and so on, which produces an approximately straight line on a log-log plot.</p>
     </header>
 
     <div class="layout">
@@ -355,16 +486,17 @@ def build_html(payload: dict) -> str:
           <span class="chip"><span class="dot" style="background: var(--good);"></span>Regression fit</span>
         </div>
 
-        <div class="svg-wrap" style="margin-top: 14px;">
-          <svg id="chart" viewBox="0 0 960 620" role="img" aria-label="Log-log plot of word frequency by rank"></svg>
-        </div>
-        <div class="footer-note">Hover a point to inspect the word, rank, and frequency. The chart uses log10 scales on both axes.</div>
-
         <div class="chart-heading">Bar Chart: Top Word Frequencies</div>
         <div class="svg-wrap">
           <svg id="barChart" viewBox="0 0 960 540" role="img" aria-label="Horizontal bar chart of the most frequent words"></svg>
         </div>
         <div class="footer-note">The bar chart shows the most frequent words in the selected text, sorted by rank.</div>
+
+        <div class="chart-heading">Line Chart: Zipf Plot</div>
+        <div class="svg-wrap" style="margin-top: 14px;">
+          <svg id="chart" viewBox="0 0 960 620" role="img" aria-label="Log-log plot of word frequency by rank"></svg>
+        </div>
+        <div class="footer-note">Hover a point to inspect the word, rank, and frequency. The chart uses log10 scales on both axes.</div>
       </section>
 
       <aside class="panel side">
@@ -374,7 +506,7 @@ def build_html(payload: dict) -> str:
           <ul>
             <li>A flat-looking vocabulary on raw counts becomes linear on a log-log chart.</li>
             <li>The law is approximate, not exact; books and genres differ.</li>
-            <li>Function words like "the", "and", and "of" dominate the top ranks.</li>
+          <li>Common stop words like "the", "and", and "of" have been removed from this view.</li>
           </ul>
         </div>
         <div class="card">
