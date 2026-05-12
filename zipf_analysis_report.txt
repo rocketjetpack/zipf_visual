@@ -1,0 +1,72 @@
+Zipf's Law Analysis
+===================
+
+Method: remove Project Gutenberg boilerplate, lowercase, tokenize alphabetic words
+with optional internal apostrophes, count frequencies, and fit:
+log10(freq) = intercept + slope * log10(rank)
+
+huckleberry_finn.txt
+--------------------
+Total tokens: 117,777
+Unique tokens: 6,096
+Slope: -1.3466
+Intercept: 4.9883
+R^2: 0.9804
+Top-10 rank*freq relative spread: 0.7734
+Top 10 words:
+   1. and            6,375
+   2. the            4,913
+   3. i              3,675
+   4. a              3,206
+   5. to             2,944
+   6. it             2,555
+   7. t              2,124
+   8. was            2,072
+   9. he             1,868
+  10. of             1,660
+
+shakespeare_complete_works.txt
+------------------------------
+Total tokens: 988,670
+Unique tokens: 24,458
+Slope: -1.5206
+Intercept: 6.6089
+R^2: 0.9746
+Top-10 rank*freq relative spread: 1.0482
+Top 10 words:
+   1. the           30,396
+   2. and           28,507
+   3. i             24,201
+   4. to            21,095
+   5. of            18,756
+   6. a             16,490
+   7. you           14,654
+   8. my            13,204
+   9. in            12,530
+  10. that          12,272
+
+alice_adventures_wonderland.txt
+-------------------------------
+Total tokens: 27,427
+Unique tokens: 2,575
+Slope: -1.2254
+Intercept: 4.0854
+R^2: 0.9753
+Top-10 rank*freq relative spread: 0.8183
+Top 10 words:
+   1. the            1,651
+   2. and              874
+   3. to               729
+   4. a                637
+   5. it               595
+   6. she              553
+   7. i                546
+   8. of               515
+   9. said             462
+  10. you              411
+
+Interpretation
+--------------
+huckleberry_finn.txt: roughly follows Zipf's Law (slope -1.3466, R^2 0.9804).
+shakespeare_complete_works.txt: roughly follows Zipf's Law (slope -1.5206, R^2 0.9746).
+alice_adventures_wonderland.txt: roughly follows Zipf's Law (slope -1.2254, R^2 0.9753).
