@@ -209,6 +209,13 @@
       color: var(--muted);
       font-size: 0.88rem;
     }
+    .chart-heading {
+      margin: 20px 4px 12px;
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      color: var(--text);
+    }
     @media (max-width: 1000px) {
       .layout { grid-template-columns: 1fr; }
       .controls, .stats { grid-template-columns: 1fr; }
@@ -250,6 +257,12 @@
           <svg id="chart" viewBox="0 0 960 620" role="img" aria-label="Log-log plot of word frequency by rank"></svg>
         </div>
         <div class="footer-note">Hover a point to inspect the word, rank, and frequency. The chart uses log10 scales on both axes.</div>
+
+        <div class="chart-heading">Bar Chart: Top Word Frequencies</div>
+        <div class="svg-wrap">
+          <svg id="barChart" viewBox="0 0 960 540" role="img" aria-label="Horizontal bar chart of the most frequent words"></svg>
+        </div>
+        <div class="footer-note">The bar chart shows the most frequent words in the selected text, sorted by rank.</div>
       </section>
 
       <aside class="panel side">
@@ -286,6 +299,7 @@
     const topnInput = document.getElementById('topn');
     const topnValue = document.getElementById('topnValue');
     const chart = document.getElementById('chart');
+    const barChart = document.getElementById('barChart');
     const statsEl = document.getElementById('stats');
     const windowSummary = document.getElementById('windowSummary');
     const tooltip = document.getElementById('tooltip');
@@ -304,6 +318,11 @@
     const height = 620;
     const plotWidth = width - margin.left - margin.right;
     const plotHeight = height - margin.top - margin.bottom;
+    const barMargin = { top: 28, right: 26, bottom: 56, left: 150 };
+    const barWidth = 960;
+    const barHeight = 540;
+    const barPlotWidth = barWidth - barMargin.left - barMargin.right;
+    const barPlotHeight = barHeight - barMargin.top - barMargin.bottom;
 
     data.books.forEach((book, idx) => {
       const option = document.createElement('option');
@@ -377,6 +396,96 @@
         groups.lastChild.textContent = `10^${tick}`;
       });
       return groups;
+    }
+
+    function drawBarChart(book, topN) {
+      const displayCount = Math.min(20, topN, book.top_terms.length);
+      const items = book.top_terms.slice(0, displayCount);
+      const maxFrequency = Math.max(...items.map((d) => d.frequency));
+
+      clear(barChart);
+
+      const title = el('text', {
+        x: barMargin.left,
+        y: 22,
+        fill: colors.text,
+        'font-size': 18,
+        'font-weight': 700
+      });
+      title.textContent = `${book.title}: top ${displayCount} words`;
+      barChart.appendChild(title);
+
+      const xLabel = el('text', {
+        x: barMargin.left + barPlotWidth / 2,
+        y: barHeight - 12,
+        fill: colors.muted,
+        'text-anchor': 'middle',
+        'font-size': 15
+      });
+      xLabel.textContent = 'frequency';
+      barChart.appendChild(xLabel);
+
+      const yLabel = el('text', {
+        x: 22,
+        y: barMargin.top + barPlotHeight / 2,
+        fill: colors.muted,
+        'text-anchor': 'middle',
+        'font-size': 15,
+        transform: `rotate(-90 22 ${barMargin.top + barPlotHeight / 2})`
+      });
+      yLabel.textContent = 'word';
+      barChart.appendChild(yLabel);
+
+      const xTicks = 5;
+      for (let i = 0; i <= xTicks; i++) {
+        const value = Math.round((maxFrequency / xTicks) * i);
+        const x = linearScale(0, maxFrequency, barMargin.left, barMargin.left + barPlotWidth, value);
+        barChart.appendChild(el('line', {
+          x1: x, y1: barMargin.top, x2: x, y2: barMargin.top + barPlotHeight,
+          stroke: colors.grid, 'stroke-width': 1
+        }));
+        const tickLabel = el('text', {
+          x, y: barHeight - 34, fill: colors.muted, 'text-anchor': 'middle', 'font-size': 13
+        });
+        tickLabel.textContent = formatInt(value);
+        barChart.appendChild(tickLabel);
+      }
+
+      const rowHeight = barPlotHeight / items.length;
+      items.forEach((d, index) => {
+        const y = barMargin.top + index * rowHeight + rowHeight * 0.16;
+        const barH = rowHeight * 0.66;
+        const barW = linearScale(0, maxFrequency, 0, barPlotWidth, d.frequency);
+        const rect = el('rect', {
+          x: barMargin.left,
+          y,
+          width: barW,
+          height: barH,
+          rx: 8,
+          fill: colors.observed,
+          opacity: 0.9
+        });
+        rect.addEventListener('mousemove', (event) => {
+          tooltip.style.opacity = '1';
+          tooltip.style.left = `${event.clientX}px`;
+          tooltip.style.top = `${event.clientY}px`;
+          tooltip.innerHTML = `<strong>${d.word}</strong><br>Rank: ${d.rank}<br>Frequency: ${formatInt(d.frequency)}`;
+        });
+        rect.addEventListener('mouseleave', () => {
+          tooltip.style.opacity = '0';
+        });
+        barChart.appendChild(rect);
+
+        const wordLabel = el('text', {
+          x: barMargin.left - 12,
+          y: y + barH * 0.7,
+          fill: colors.text,
+          'text-anchor': 'end',
+          'font-size': 14
+        });
+        wordLabel.textContent = d.word;
+        barChart.appendChild(wordLabel);
+      });
     }
 
     function render() {
@@ -501,6 +610,8 @@
         Showing the top <strong>${formatInt(topN)}</strong> ranks out of <strong>${formatInt(book.unique_tokens)}</strong> unique words.
         The selected book's leading word is <strong>${book.top_word}</strong> (${formatInt(book.top_word_frequency)} occurrences).
       `;
+
+      drawBarChart(book, topN);
     }
 
     bookSelect.addEventListener('change', render);
